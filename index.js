@@ -5,14 +5,15 @@ const graphqlHTTP = require('express-graphql');
 const {
   GraphQLSchema,
   GraphQLObjectType,
-  GraphQLNonNull,//: used to make the arguments in a query a requirement
+  GraphQLList,//: using it in the field definition inside of the queryType
+  GraphQLNonNull,
   GraphQLID,
   GraphQLString,
   GraphQLInt,
   GraphQLBoolean,
  } = require('graphql');
- const { getVideoById } = require('./src/data');
-
+ const { getVideoById, getVideos } = require('./src/data');//: look for gql_datalesson9
+                                        //importing new getVideos
 const PORT = process.env.PORT || 3000;
 const server = express();
 
@@ -44,11 +45,15 @@ const queryType = new GraphQLObjectType({
   name: 'QueryType',
   description: 'The root query type.',
   fields: {
+    videos: {
+      type: new GraphQLList(videoType),//it is a collection of videos
+      resolve: getVideos,
+    },
     video: {
       type: videoType,
       args: {
         id: {
-          type: new GraphQLNonNull(GraphQLID),//: by passing the GraphQLID as an argument we require queries to function similarily
+          type: new GraphQLNonNull(GraphQLID),
           description: 'The id of the video.',
         },
       },
@@ -63,7 +68,6 @@ const schema = new GraphQLSchema({
     query: queryType,
 });
 
-
 server.use('/graphql', graphqlHTTP({
   schema,
   graphiql: true,
@@ -75,7 +79,7 @@ server.listen(PORT, () => {
 });
 
 /*write in git bash terminal: node <file-name.js>
-$ node gql_lesson8.js =>> will bootstrap the server
+$ node gql_lesson9.js =>> will bootstrap the server
 response:
 Listeing on http://localhost:3000
 
@@ -93,27 +97,26 @@ write in GraphiQL:
 }
 and press Play button
 
-GraphQLNonNull requires the input that it is assigned under.
-if you queried:
+with GraphQLList we can make a videos search and receive a list:
 {
-  video {
+  videos {
     title
   }
 }
-result:
+resolved as:
 {
-  "errors": [
-    {
-      "message": "Field \"video\" argument \"id\" of type \"ID!\" is required but not provided.",
-      "locations": [
-        {
-          "line": 16,
-          "column": 3
-        }
-      ]
-    }
-  ]
+  "data": {
+    "videos": [
+      {
+        "title": "Create a GraphQL Schema"
+      },
+      {
+        "title": "Ember.js CLI"
+      }
+    ]
+  }
 }
 
-only after adding the (id: "a") argument will be resolved.
+GraphQLNonNull requires the input that it is assigned under.
+
 */
