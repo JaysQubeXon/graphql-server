@@ -1,15 +1,16 @@
 'user strict';
-// rewriting gql_lesson5 schema into JavaScript
-const express = require('express');//: web framework to serve up the graphql server
-const graphqlHTTP = require('express-graphql');//: allowing us to serve up the graphql schema as a middleware in express
-const { //=> need to change the require statement to grab some of the functions needed:
-  GraphQLSchema, //to be able to write the schema
-  GraphQLObjectType, //:for higher order types
-  GraphQLID, //:primitive type in GraphQL
-  GraphQLString, //:primitive type in GraphQL
-  GraphQLInt, //:primitive type in GraphQL
-  GraphQLBoolean, //:primitive type in GraphQL
+
+const express = require('express');
+const graphqlHTTP = require('express-graphql');
+const {
+  GraphQLSchema,
+  GraphQLObjectType,
+  GraphQLID,
+  GraphQLString,
+  GraphQLInt,
+  GraphQLBoolean,
  } = require('graphql');
+ const { getVideoById } = require('./src/data');//: after builing index.js of that directory
 
 const PORT = process.env.PORT || 3000;
 const server = express();
@@ -38,49 +39,39 @@ const videoType = new GraphQLObjectType({
 
 });
 
-const queryType = new GraphQLObjectType({//defining the queryType
+const queryType = new GraphQLObjectType({
   name: 'QueryType',
   description: 'The root query type.',
-  fields: {//: every field has its own type and resolve statement
+  fields: {
     video: {
       type: videoType,
-      resolve: () => new Promise((resolve) => {
-        resolve({
-          id: 'a',
-          title: 'GraphQL',
-          duration: 180,
-          watched: false,
-        });
-      }),// was written before writing the videoType
+      args: {//: in GraphQL it is possible to pass arguments to fields by using the args key.
+        id: { //: name of the argument to query
+          type: GraphQLID,
+          description: 'The id of the video.',
+        },
+      },//: now, instead of resolving with a static object as was in previous lessons,
+        // we can write the resolve as a function. The first argument we don't care about,
+        // but the second one will have all the arguments that are being passed in to our
+        // resolve statement for our field. we can use that inside of our function -fat arrow => instance,
+      resolve: (_, args) => {
+        return getVideoById(args.id);// id for the specific video that we want.
+      },
     },
   },
 });
 
-const schema = new GraphQLSchema({//: configuration object that take some keys
-  query: queryType,
+const schema = new GraphQLSchema({
+    query: queryType,
 });
 
-const videoA = {
-  id: 'a',
-  title: 'Create a GraphQL Schema',
-  duration: 120,
-  watched: true,
-};
-
-const videoB = {
-  id: 'b',
-  title: 'Ember.js CLI',
-  duration: 240,
-  watched: false,
-};
-
-const videos = [videoA, videoB];
+/*cut the video data and is now in newly created src/data/index.js file*/
 
 
 server.use('/graphql', graphqlHTTP({
   schema,
   graphiql: true,
-}));// removed the rootValue from gql_lesson5
+}));
 
 
 server.listen(PORT, () => {
@@ -88,7 +79,7 @@ server.listen(PORT, () => {
 });
 
 /*write in git bash terminal: node <file-name.js>
-$ node gql_lesson6.js =>> will bootstrap the server
+$ node gql_lesson7.js =>> will bootstrap the server
 response:
 Listeing on http://localhost:3000
 
@@ -97,15 +88,31 @@ http://localhost:3000/graphql ==> where the middleware is hosted on
 and get a graphical view of the tool called GraphiQL that will allow querying
 the Schema
 
-write in GraphiQL:
+note: we created file index.js inside of subdirectories /src/data/index.js
 
+write in GraphiQL:
+//GraphiQL is case sensitive
 {
-  video {
-    id
+  video(id: "a") {    <== id of args field
     title
-    duration
-    watched
   }
 }
 and press Play button
+
+response:
+{
+  "data": {
+    "video": {
+      "title": "Create a GraphQL Schema"
+    }
+  }
+}
+//id: "b" came out:
+{
+  "data": {
+    "video": {
+      "title": "Ember.js CLI"
+    }
+  }
+}
 */
