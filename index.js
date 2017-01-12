@@ -1,10 +1,13 @@
 'user strict';
 
-const { graphql, buildSchema } = require('graphql');
+const { graphql, buildSchema } = require('./graphql-server/node_modules/graphql');
 // describe the capabilities of the graphql server with schema
 const schema = buildSchema(`
   type Query {
-    foo: String
+    id: ID,
+    title: String,
+    duration: Int,
+    watched: Boolean
   }
 
   type Schema {
@@ -14,12 +17,18 @@ const schema = buildSchema(`
 
 //create resolver:
 const resolvers = {
-  foo: () => 'bar',
-}
+  id: () => '1',
+  title: () => 'bar',
+  duration: () => 180,
+  watched: () => true,
+};
 
 const query = `
 query myFirstQuery {
-  foo
+  id
+  title
+  duration
+  watched
 }
 `;
 
@@ -27,6 +36,6 @@ graphql(schema, query, resolvers)
   .then((result) => console.log(result))// promise
   .catch((error) => console.log(error));
 
-  /*write in git bash terminal: node <file-name.js>
-  $ node gql_lesson1.js
-  { data: { foo: 'bar' } } */
+/*write in git bash terminal: node <file-name.js>
+$ node gql_lesson2.js
+{ data: { id: '1', title: 'bar', duration: 180, watched: true } } */
