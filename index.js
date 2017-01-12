@@ -14,7 +14,12 @@ const {
   GraphQLBoolean,
  } = require('graphql');
 const { getVideoById, getVideos, createVideo} = require('./src/data');
-const { globalIdField } = require('graphql-relay');
+const {
+  globalIdField,
+  connectionDefinitions,
+  connectionFromPromisedArray,
+  connectionArgs,
+ } = require('graphql-relay');
 const { nodeInterface, nodeField } = require('./src/node');
 
 const PORT = process.env.PORT || 3000;
@@ -38,18 +43,37 @@ const videoType = new GraphQLObjectType({
       description: 'Whether or not the viewer has watched the video.',
     },
   },
-  interfaces: [nodeInterface], //stays the same
+  interfaces: [nodeInterface],
 });
 exports.videoType = videoType;
 
+const { connectionType: VideoConnection } = connectionDefinitions({
+  nodeType: videoType,
+  connectionFields: () => ({// a method that returns an object
+    totalCount: {
+      type: GraphQLInt,
+      description: 'A count of the total number of objects in this connection.',
+      resolve: (conn) => {// conn = connection
+        return conn.edges.length;
+      },
+    },
+  }),
+});
 const queryType = new GraphQLObjectType({
   name: 'QueryType',
   description: 'The root query type.',
   fields: {
-    node: nodeField,// added here
+    node: nodeField,
     videos: {
-      type: new GraphQLList(videoType),
-      resolve: getVideos,
+      type: VideoConnection,
+      args: connectionArgs, //imported from graphql-relay
+      resolve: (_, args) => connectionFromPromisedArray(
+        //this method expects the first argument to be a promise that
+        //resolves to an array of objects, in this case our videos and the
+        //second argument is going to be the connectionArgs
+        getVideos(),
+        args
+      ),
     },
     video: {
       type: videoType,
@@ -83,7 +107,6 @@ const videoInputType = new GraphQLInputObjectType({
    },
   },
 });
-
 const mutationType = new GraphQLObjectType({
   name: 'Mutation',
   description: 'The root Mutation type.',
@@ -118,7 +141,7 @@ server.listen(PORT, () => {
 });
 
 /*write in git bash terminal: node <file-name.js>
-$ node gql_lesson13.js =>> will bootstrap the server
+$ node index.js =>> will bootstrap the server
 response:
 Listeing on http://localhost:3000
 
@@ -130,37 +153,52 @@ the Schema
 //GraphiQL is case sensitive
 
 write in GraphiQL:
+[1]:
 {
-  videos {
-    id
+	videos {
+    edges {
+      node {
+        id,
+        title,
+        duration
+      }
+    }
   }
 }
 result:
 {
   "data": {
-    "videos": [
-      {
-        "id": "VmlkZW86YQ=="
-      },
-      {
-        "id": "VmlkZW86Yg=="
-      }
-    ]
-  }
-}
-using the first id, query this:
-{
-  node(id: "VmlkZW86YQ==") {
-   	... on Video {
-      title
+    "videos": {
+      "edges": [
+        {
+          "node": {
+            "id": "VmlkZW86YQ==",
+            "title": "Create a GraphQL Schema",
+            "duration": 120
+          }
+        },
+        {
+          "node": {
+            "id": "VmlkZW86Yg==",
+            "title": "Ember.js CLI",
+            "duration": 240
+          }
+        }
+      ]
     }
   }
 }
-result should be:
+[2]:when looking up totalCount:
+{
+	videos {
+    totalCount
+  }
+}
+retult:
 {
   "data": {
-    "node": {
-      "title": "Create a GraphQL Schema"
+    "videos": {
+      "totalCount": 2
     }
   }
 }
