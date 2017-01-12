@@ -5,15 +5,15 @@ const graphqlHTTP = require('express-graphql');
 const {
   GraphQLSchema,
   GraphQLObjectType,
-  GraphQLList,//: using it in the field definition inside of the queryType
+  GraphQLList,
   GraphQLNonNull,
   GraphQLID,
   GraphQLString,
   GraphQLInt,
   GraphQLBoolean,
  } = require('graphql');
- const { getVideoById, getVideos } = require('./src/data');//: look for gql_datalesson9
-                                        //importing new getVideos
+ const { getVideoById, getVideos, createVideo} = require('./src/data');
+                                        //importing new createVideo
 const PORT = process.env.PORT || 3000;
 const server = express();
 
@@ -46,7 +46,7 @@ const queryType = new GraphQLObjectType({
   description: 'The root query type.',
   fields: {
     videos: {
-      type: new GraphQLList(videoType),//it is a collection of videos
+      type: new GraphQLList(videoType),
       resolve: getVideos,
     },
     video: {
@@ -64,8 +64,36 @@ const queryType = new GraphQLObjectType({
   },
 });
 
+const mutationType = new GraphQLObjectType({
+  name: 'Mutation',
+  description: 'The root Mutation type.',
+  fields: {
+    createVideo: {
+        type: videoType,
+        args: {
+         title: {
+          type: new GraphQLNonNull(GraphQLString),
+          description: 'The title of the video.',
+        },
+        duration: {
+          type: new GraphQLNonNull(GraphQLInt),
+          description: 'The duration of the video (in seconds).',
+        },
+        released: {
+          type: new GraphQLNonNull(GraphQLBoolean),
+          description: 'Whether or not the video is released.',
+        },
+      },
+      resolve: (_, args) => {
+        return createVideo(args);
+      },
+    },
+  },
+});
+
 const schema = new GraphQLSchema({
     query: queryType,
+    mutation: mutationType,//: written only after the mutationType was created above.
 });
 
 server.use('/graphql', graphqlHTTP({
@@ -79,7 +107,7 @@ server.listen(PORT, () => {
 });
 
 /*write in git bash terminal: node <file-name.js>
-$ node gql_lesson9.js =>> will bootstrap the server
+$ node gql_lesson10.js =>> will bootstrap the server
 response:
 Listeing on http://localhost:3000
 
@@ -88,35 +116,24 @@ http://localhost:3000/graphql ==> where the middleware is hosted on
 and get a graphical view of the tool called GraphiQL that will allow querying
 the Schema
 
-write in GraphiQL:
 //GraphiQL is case sensitive
-{
-  video(id: "a") {    <== id of args field
-    title
-  }
-}
-and press Play button
 
-with GraphQLList we can make a videos search and receive a list:
-{
-  videos {
+write in GraphiQL:
+mutation M {
+  createVideo(title: "Foo", duration: 300, released: false) {
+    id,
     title
   }
 }
-resolved as:
+result:
 {
   "data": {
-    "videos": [
-      {
-        "title": "Create a GraphQL Schema"
-      },
-      {
-        "title": "Ember.js CLI"
-      }
-    ]
+    "createVideo": {
+      "id": "Rm9v",
+      "title": "Foo"
+    }
   }
 }
-
-GraphQLNonNull requires the input that it is assigned under.
+That video was added to the list, you can check it out.
 
 */
