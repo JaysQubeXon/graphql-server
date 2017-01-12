@@ -5,12 +5,13 @@ const graphqlHTTP = require('express-graphql');
 const {
   GraphQLSchema,
   GraphQLObjectType,
+  GraphQLNonNull,//: used to make the arguments in a query a requirement
   GraphQLID,
   GraphQLString,
   GraphQLInt,
   GraphQLBoolean,
  } = require('graphql');
- const { getVideoById } = require('./src/data');//: after builing index.js of that directory
+ const { getVideoById } = require('./src/data');
 
 const PORT = process.env.PORT || 3000;
 const server = express();
@@ -45,17 +46,14 @@ const queryType = new GraphQLObjectType({
   fields: {
     video: {
       type: videoType,
-      args: {//: in GraphQL it is possible to pass arguments to fields by using the args key.
-        id: { //: name of the argument to query
-          type: GraphQLID,
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID),//: by passing the GraphQLID as an argument we require queries to function similarily
           description: 'The id of the video.',
         },
-      },//: now, instead of resolving with a static object as was in previous lessons,
-        // we can write the resolve as a function. The first argument we don't care about,
-        // but the second one will have all the arguments that are being passed in to our
-        // resolve statement for our field. we can use that inside of our function -fat arrow => instance,
+      },
       resolve: (_, args) => {
-        return getVideoById(args.id);// id for the specific video that we want.
+        return getVideoById(args.id);
       },
     },
   },
@@ -64,8 +62,6 @@ const queryType = new GraphQLObjectType({
 const schema = new GraphQLSchema({
     query: queryType,
 });
-
-/*cut the video data and is now in newly created src/data/index.js file*/
 
 
 server.use('/graphql', graphqlHTTP({
@@ -79,7 +75,7 @@ server.listen(PORT, () => {
 });
 
 /*write in git bash terminal: node <file-name.js>
-$ node gql_lesson7.js =>> will bootstrap the server
+$ node gql_lesson8.js =>> will bootstrap the server
 response:
 Listeing on http://localhost:3000
 
@@ -87,8 +83,6 @@ if you go into the browser and look up:
 http://localhost:3000/graphql ==> where the middleware is hosted on
 and get a graphical view of the tool called GraphiQL that will allow querying
 the Schema
-
-note: we created file index.js inside of subdirectories /src/data/index.js
 
 write in GraphiQL:
 //GraphiQL is case sensitive
@@ -99,20 +93,27 @@ write in GraphiQL:
 }
 and press Play button
 
-response:
+GraphQLNonNull requires the input that it is assigned under.
+if you queried:
 {
-  "data": {
-    "video": {
-      "title": "Create a GraphQL Schema"
-    }
+  video {
+    title
   }
 }
-//id: "b" came out:
+result:
 {
-  "data": {
-    "video": {
-      "title": "Ember.js CLI"
+  "errors": [
+    {
+      "message": "Field \"video\" argument \"id\" of type \"ID!\" is required but not provided.",
+      "locations": [
+        {
+          "line": 16,
+          "column": 3
+        }
+      ]
     }
-  }
+  ]
 }
+
+only after adding the (id: "a") argument will be resolved.
 */
