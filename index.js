@@ -3,11 +3,15 @@
 const { graphql, buildSchema } = require('./graphql-server/node_modules/graphql');
 // describe the capabilities of the graphql server with schema
 const schema = buildSchema(`
-  type Query {
+  type Video {
     id: ID,
     title: String,
     duration: Int,
     watched: Boolean
+  }
+
+  type Query {
+    video: Video
   }
 
   type Schema {
@@ -17,18 +21,22 @@ const schema = buildSchema(`
 
 //create resolver:
 const resolvers = {
-  id: () => '1',
-  title: () => 'bar',
-  duration: () => 180,
-  watched: () => true,
-};
+  video: () => ({
+    id: () => '1',
+    title: () => 'Foo',
+    duration: () => 180,
+    watched: () => true,
+  }),
+};//resolvers for the schema
 
 const query = `
 query myFirstQuery {
-  id
-  title
-  duration
-  watched
+  video {
+    id,
+    title,
+    duration,
+    watched
+  }
 }
 `;
 
@@ -37,5 +45,5 @@ graphql(schema, query, resolvers)
   .catch((error) => console.log(error));
 
 /*write in git bash terminal: node <file-name.js>
-$ node gql_lesson2.js
-{ data: { id: '1', title: 'bar', duration: 180, watched: true } } */
+$ node gql_lesson3.js
+{ data: { video: { id: '1', title: 'Foo', duration: 180, watched: true } } }*/
