@@ -90,7 +90,7 @@ const queryType = new GraphQLObjectType({
 
 const videoMutation = mutationWithClientMutationId({
   name: 'AddVideo',
-  inputFields: {//what fields are defined on our input object type
+  inputFields: {
     title: {
      type: new GraphQLNonNull(GraphQLString),
      description: 'The title of the video.',
@@ -104,20 +104,15 @@ const videoMutation = mutationWithClientMutationId({
      description: 'Whether or not the video is released.',
     },
   },
-  outputFields: {//will correspond with what we can query on after the mutation
+  outputFields: {
     video: {
       type: videoType,
     },
   },
   mutateAndGetPayload: (args) => new Promise((resolve, reject) => {
-    //arguments that will pass in will correspond with whatever our inputFields are.
     Promise.resolve(createVideo(args))
     .then((video) => resolve({ video }))
     .catch(reject);
-    //the value that we will be returning or resolving from this method
-    //is what we are going to be able to pick out information from these outputFields.
-    //if we want to be able to get the data under the video in outputFields, that is why we
-    //are resolving an { object  } and one of the keys on that object is video.
   }),
 });
 
@@ -143,44 +138,3 @@ server.use('/graphql', graphqlHTTP({
 server.listen(PORT, () => {
   console.log(`Listeing on http://localhost:${PORT}`);
 });
-
-/*write in git bash terminal: node <file-name.js>
-$ node gql_lesson15.js =>> will bootstrap the server
-response:
-Listeing on http://localhost:3000
-
-if you go into the browser and look up:
-http://localhost:3000/graphql ==> where the middleware is hosted on
-and get a graphical view of the tool called GraphiQL that will allow querying
-the Schema
-
-//GraphiQL is case sensitive
-
-write in GraphiQL:
-mutation AddVideoQuery($input: AddVideoInput!) {
-  createVideo(input: $input) {
-    video {
-      title
-    }
-  }
-}
-inside the Query Variables panel write:
-{
-  "input": {
-    "title": "video title",
-    "duration": 300,
-    "released": false,
-    "clientMutationId": "abcd"
-  }
-}
-result:
-{
-  "data": {
-    "createVideo": {
-      "video": {
-        "title": "video title"
-      }
-    }
-  }
-}
-*/

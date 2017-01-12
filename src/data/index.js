@@ -38,16 +38,15 @@ const getObjectById = (type, id) => {
     video: getVideoById,
   };
 
-  return types[type](id);//type of types of getVideoById and we pass in the id to that method
+  return types[type](id);
 };
 
 exports.getVideoById = getVideoById;
 
 exports.getVideos = getVideos;
-//in conjunction with gql_lesson9
+
 
 exports.createVideo = createVideo;
-//in conjunction with gql_lesson10
+
 
 exports.getObjectById = getObjectById;
-//in conjunction with gql_lesson13
