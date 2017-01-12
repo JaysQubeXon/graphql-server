@@ -15,10 +15,6 @@ const videoB = {
 const videos = [videoA, videoB];
 
 const getVideoById = (id) => new Promise((resolve) => {
-  //: To implement this we are going to go through and get the video after
-  //filtering through all the videos and for each video, we will check the server
-  //that the current video.id matches the given id. at the end we will
-  //resolve with the (video).
   const [video] = videos.filter((video) => {
     return video.id === id;
   });
@@ -26,5 +22,9 @@ const getVideoById = (id) => new Promise((resolve) => {
   resolve(video);
 });
 
+const getVideos = () => new Promise((resolve) => resolve(videos));
+
 exports.getVideoById = getVideoById;
-//in conjunction with gql_lesson7 + gql_lesson8
+
+exports.getVideos = getVideos;
+//in conjunction with gql_lesson9
