@@ -14,32 +14,17 @@ const {
   GraphQLBoolean,
  } = require('graphql');
 const { getVideoById, getVideos, createVideo} = require('./src/data');
-const nodeInterface = require('./src/node');//<=== import this
+const { globalIdField } = require('graphql-relay');
+const { nodeInterface, nodeField } = require('./src/node');
 
 const PORT = process.env.PORT || 3000;
 const server = express();
 
-/*const instructorType = new GraphQLObjectType({
-  //inside of here, we knew that fields of this will also contain this id field as well.
-  //and since we are sharing these fields we would also add the interfaces: array once again
-  //and pass in the nodeInterface as the first element of that array. this is garranting that
-  //these two types that share the same fields now have a common interface that they both implement.
-  fields: {
-    id: {
-      type: GraphQLID,                              for example only
-      description: 'The id of the video.',
-    },
-  },
-  interfaces: [nodeInterface],
-});*/
 const videoType = new GraphQLObjectType({
   name: 'Video',
   description: 'A video on Egghead.io',
   fields: {
-    id: {
-      type: new GraphQLNonNull(GraphQLID),
-      description: 'The id of the video.',
-    },
+    id: globalIdField(),
     title: {
       type: GraphQLString,
       description: 'The title of the video.',
@@ -53,8 +38,7 @@ const videoType = new GraphQLObjectType({
       description: 'Whether or not the viewer has watched the video.',
     },
   },
-  interfaces: [nodeInterface],//:the goal for this interface is to be able to use
-                //it anytime we have shared fields between types.
+  interfaces: [nodeInterface], //stays the same
 });
 exports.videoType = videoType;
 
@@ -62,6 +46,7 @@ const queryType = new GraphQLObjectType({
   name: 'QueryType',
   description: 'The root query type.',
   fields: {
+    node: nodeField,// added here
     videos: {
       type: new GraphQLList(videoType),
       resolve: getVideos,
@@ -98,6 +83,7 @@ const videoInputType = new GraphQLInputObjectType({
    },
   },
 });
+
 const mutationType = new GraphQLObjectType({
   name: 'Mutation',
   description: 'The root Mutation type.',
@@ -132,7 +118,7 @@ server.listen(PORT, () => {
 });
 
 /*write in git bash terminal: node <file-name.js>
-$ node gql_lesson12.js =>> will bootstrap the server
+$ node gql_lesson13.js =>> will bootstrap the server
 response:
 Listeing on http://localhost:3000
 
@@ -144,5 +130,38 @@ the Schema
 //GraphiQL is case sensitive
 
 write in GraphiQL:
-none this lesson.
+{
+  videos {
+    id
+  }
+}
+result:
+{
+  "data": {
+    "videos": [
+      {
+        "id": "VmlkZW86YQ=="
+      },
+      {
+        "id": "VmlkZW86Yg=="
+      }
+    ]
+  }
+}
+using the first id, query this:
+{
+  node(id: "VmlkZW86YQ==") {
+   	... on Video {
+      title
+    }
+  }
+}
+result should be:
+{
+  "data": {
+    "node": {
+      "title": "Create a GraphQL Schema"
+    }
+  }
+}
 */

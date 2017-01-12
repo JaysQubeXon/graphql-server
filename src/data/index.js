@@ -21,18 +21,10 @@ const getVideoById = (id) => new Promise((resolve) => {
 
   resolve(video);
 });
-
 const getVideos = () => new Promise((resolve) => resolve(videos));
-
 const createVideo = ({ title, duration, released }) => {
   const video = {
-    //create your unique id number:
-    //id: (new Buffer(title, 'utf8')).toString('base64'), original yet advised against in documentation.
-    id: (Buffer.from(title,[duration, released], 'utf8')).toString('base64'),
-    /*passing a string, array, or Buffer as the first
-    argument copies the passed object's data into the Buffer.
-    base64 ==> when creating a Buffer from a string, this encoding will also
-    correctly accept "URL and Filename Safe Alphabet" as specified in RFC4648 Section 5.*/
+    id: (new Buffer(title, 'utf8')).toString('base64'),
     title,
     duration,
     released,
@@ -41,10 +33,21 @@ const createVideo = ({ title, duration, released }) => {
 
   return video;
 };
+const getObjectById = (type, id) => {
+  const types = {
+    video: getVideoById,
+  };
+
+  return types[type](id);//type of types of getVideoById and we pass in the id to that method
+};
 
 exports.getVideoById = getVideoById;
 
 exports.getVideos = getVideos;
+//in conjunction with gql_lesson9
 
 exports.createVideo = createVideo;
 //in conjunction with gql_lesson10
+
+exports.getObjectById = getObjectById;
+//in conjunction with gql_lesson13
