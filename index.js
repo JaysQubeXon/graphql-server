@@ -5,6 +5,7 @@ const graphqlHTTP = require('express-graphql');
 const {
   GraphQLSchema,
   GraphQLObjectType,
+  GraphQLInputObjectType,//import this
   GraphQLList,
   GraphQLNonNull,
   GraphQLID,
@@ -13,7 +14,7 @@ const {
   GraphQLBoolean,
  } = require('graphql');
  const { getVideoById, getVideos, createVideo} = require('./src/data');
-                                        //importing new createVideo
+
 const PORT = process.env.PORT || 3000;
 const server = express();
 
@@ -38,7 +39,6 @@ const videoType = new GraphQLObjectType({
       description: 'Whether or not the viewer has watched the video.',
     },
   },
-
 });
 
 const queryType = new GraphQLObjectType({
@@ -64,6 +64,24 @@ const queryType = new GraphQLObjectType({
   },
 });
 
+const videoInputType = new GraphQLInputObjectType({
+  name: 'VideoInput',
+  fields: {
+    title: {
+     type: new GraphQLNonNull(GraphQLString),
+     description: 'The title of the video.',
+   },
+   duration: {
+     type: new GraphQLNonNull(GraphQLInt),
+     description: 'The duration of the video (in seconds).',
+   },
+   released: {
+     type: new GraphQLNonNull(GraphQLBoolean),
+     description: 'Whether or not the video is released.',
+   },
+  },
+});
+
 const mutationType = new GraphQLObjectType({
   name: 'Mutation',
   description: 'The root Mutation type.',
@@ -71,21 +89,15 @@ const mutationType = new GraphQLObjectType({
     createVideo: {
         type: videoType,
         args: {
-         title: {
-          type: new GraphQLNonNull(GraphQLString),
-          description: 'The title of the video.',
-        },
-        duration: {
-          type: new GraphQLNonNull(GraphQLInt),
-          description: 'The duration of the video (in seconds).',
-        },
-        released: {
-          type: new GraphQLNonNull(GraphQLBoolean),
-          description: 'Whether or not the video is released.',
+        video: {
+          type: new GraphQLNonNull(videoInputType),
+          // this is going to be build off of something called GraphQLInputObjectType
         },
       },
       resolve: (_, args) => {
-        return createVideo(args);
+        return createVideo(args.video);//:instead of only args, args.video will be the
+                                    //object representing all the fields that we are
+                                    //interested in.
       },
     },
   },
@@ -93,7 +105,7 @@ const mutationType = new GraphQLObjectType({
 
 const schema = new GraphQLSchema({
     query: queryType,
-    mutation: mutationType,//: written only after the mutationType was created above.
+    mutation: mutationType,
 });
 
 server.use('/graphql', graphqlHTTP({
@@ -107,7 +119,7 @@ server.listen(PORT, () => {
 });
 
 /*write in git bash terminal: node <file-name.js>
-$ node gql_lesson10.js =>> will bootstrap the server
+$ node gql_lesson11.js =>> will bootstrap the server
 response:
 Listeing on http://localhost:3000
 
@@ -120,20 +132,25 @@ the Schema
 
 write in GraphiQL:
 mutation M {
-  createVideo(title: "Foo", duration: 300, released: false) {
-    id,
+  createVideo(video: {
+    title: "Foo",
+    duration: 300,
+    released: false
+  }) {
     title
+    id
   }
 }
 result:
 {
   "data": {
     "createVideo": {
-      "id": "Rm9v",
-      "title": "Foo"
+      "title": "Foo",
+      "id": "Rm9v"
     }
   }
 }
 That video was added to the list, you can check it out.
-
+Also, notice that MutationType in schema panel is now:
+createVideo(video: VideoInput!): Video
 */
