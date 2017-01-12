@@ -19,6 +19,7 @@ const {
   connectionDefinitions,
   connectionFromPromisedArray,
   connectionArgs,
+  mutationWithClientMutationId,
  } = require('graphql-relay');
 const { nodeInterface, nodeField } = require('./src/node');
 
@@ -49,11 +50,11 @@ exports.videoType = videoType;
 
 const { connectionType: VideoConnection } = connectionDefinitions({
   nodeType: videoType,
-  connectionFields: () => ({// a method that returns an object
+  connectionFields: () => ({
     totalCount: {
       type: GraphQLInt,
       description: 'A count of the total number of objects in this connection.',
-      resolve: (conn) => {// conn = connection
+      resolve: (conn) => {
         return conn.edges.length;
       },
     },
@@ -66,11 +67,8 @@ const queryType = new GraphQLObjectType({
     node: nodeField,
     videos: {
       type: VideoConnection,
-      args: connectionArgs, //imported from graphql-relay
+      args: connectionArgs,
       resolve: (_, args) => connectionFromPromisedArray(
-        //this method expects the first argument to be a promise that
-        //resolves to an array of objects, in this case our videos and the
-        //second argument is going to be the connectionArgs
         getVideos(),
         args
       ),
@@ -90,38 +88,44 @@ const queryType = new GraphQLObjectType({
   },
 });
 
-const videoInputType = new GraphQLInputObjectType({
-  name: 'VideoInput',
-  fields: {
+const videoMutation = mutationWithClientMutationId({
+  name: 'AddVideo',
+  inputFields: {//what fields are defined on our input object type
     title: {
      type: new GraphQLNonNull(GraphQLString),
      description: 'The title of the video.',
-   },
-   duration: {
+    },
+    duration: {
      type: new GraphQLNonNull(GraphQLInt),
      description: 'The duration of the video (in seconds).',
-   },
-   released: {
+    },
+    released: {
      type: new GraphQLNonNull(GraphQLBoolean),
      description: 'Whether or not the video is released.',
-   },
+    },
   },
+  outputFields: {//will correspond with what we can query on after the mutation
+    video: {
+      type: videoType,
+    },
+  },
+  mutateAndGetPayload: (args) => new Promise((resolve, reject) => {
+    //arguments that will pass in will correspond with whatever our inputFields are.
+    Promise.resolve(createVideo(args))
+    .then((video) => resolve({ video }))
+    .catch(reject);
+    //the value that we will be returning or resolving from this method
+    //is what we are going to be able to pick out information from these outputFields.
+    //if we want to be able to get the data under the video in outputFields, that is why we
+    //are resolving an { object  } and one of the keys on that object is video.
+  }),
 });
+
 const mutationType = new GraphQLObjectType({
   name: 'Mutation',
   description: 'The root Mutation type.',
   fields: {
-    createVideo: {
-        type: videoType,
-        args: {
-        video: {
-          type: new GraphQLNonNull(videoInputType),
-        },
-      },
-      resolve: (_, args) => {
-        return createVideo(args.video);
-      },
-    },
+    createVideo: videoMutation,
   },
 });
 
@@ -141,7 +145,7 @@ server.listen(PORT, () => {
 });
 
 /*write in git bash terminal: node <file-name.js>
-$ node index.js =>> will bootstrap the server
+$ node gql_lesson15.js =>> will bootstrap the server
 response:
 Listeing on http://localhost:3000
 
@@ -153,52 +157,29 @@ the Schema
 //GraphiQL is case sensitive
 
 write in GraphiQL:
-[1]:
-{
-	videos {
-    edges {
-      node {
-        id,
-        title,
-        duration
-      }
+mutation AddVideoQuery($input: AddVideoInput!) {
+  createVideo(input: $input) {
+    video {
+      title
     }
+  }
+}
+inside the Query Variables panel write:
+{
+  "input": {
+    "title": "video title",
+    "duration": 300,
+    "released": false,
+    "clientMutationId": "abcd"
   }
 }
 result:
 {
   "data": {
-    "videos": {
-      "edges": [
-        {
-          "node": {
-            "id": "VmlkZW86YQ==",
-            "title": "Create a GraphQL Schema",
-            "duration": 120
-          }
-        },
-        {
-          "node": {
-            "id": "VmlkZW86Yg==",
-            "title": "Ember.js CLI",
-            "duration": 240
-          }
-        }
-      ]
-    }
-  }
-}
-[2]:when looking up totalCount:
-{
-	videos {
-    totalCount
-  }
-}
-retult:
-{
-  "data": {
-    "videos": {
-      "totalCount": 2
+    "createVideo": {
+      "video": {
+        "title": "video title"
+      }
     }
   }
 }
